@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+from pyunifi.nrpe import UnifiNrpe
+
+
+class CheckAPReady(UnifiNrpe):
+
+    def check_aps(self, unifi):
+        aps = unifi.get_aps()
+
+        ap_not_ready = []
+        for ap in aps:
+            name = ap['name']
+            if 'radio_table_stats' not in ap:
+                continue
+            for radio in ap['radio_table_stats']:
+                if radio['state'] != 'RUN':
+                    ap_not_ready.append(f'Radio on {name} is not ready: {radio["state"]}')
+
+        return ap_not_ready
+
+    def check(self, unifi):
+        ap_not_ready = self.check_aps(unifi)
+
+        if ap_not_ready:
+            code = self.CRITICAL
+            message = '\n'.join(ap_not_ready)
+        else:
+            code = self.OK
+            message = 'All AP radios are operational.'
+
+        return code, message
+
+
+check = CheckAPReady()
+check.start()

@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+from pyunifi.nrpe import UnifiNrpe
+
+
+class CheckWlanHealth(UnifiNrpe):
+
+    def get_wlan_health(self, unifi):
+        healthinfo = unifi.get_healthinfo()
+        for subsystem in healthinfo:
+            if subsystem['subsystem'] == 'wlan':
+                return subsystem
+        return None
+
+    def check_wlan_health(self, health):
+        issues = []
+        status = health['status']
+        if status != 'ok':
+            issues.append(f'WLAN subsystem status: {status}')
+
+        aps = health['num_ap']
+        adopted = health['num_adopted']
+        if aps != adopted:
+            issues.append(f'Only {adopted} of {aps} APs adopted.')
+
+        disabled = health['num_disabled']
+        if disabled:
+            issues.append(f'{disabled} AP is disabled.')
+
+        disconnected = health['num_disconnected']
+        if disconnected:
+            issues.append(f'{disconnected} AP is disconnected.')
+
+        pending = health['num_pending']
+        if pending:
+            issues.append(f'{pending} AP is pending.')
+
+        return issues
+
+    def check(self, unifi):
+        wlan_health = self.get_wlan_health(unifi)
+        issues = self.check_wlan_health(wlan_health)
+
+        if issues:
+            code = self.CRITICAL
+            message = '\n'.join(issues)
+        else:
+            code = self.OK
+            message = 'WLAN system is healthy.'
+
+        return code, message
+
+
+check = CheckWlanHealth()
+check.start()
