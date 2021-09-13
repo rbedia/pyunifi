@@ -18,6 +18,12 @@ Install
 
     sudo pip install -U pyunifi
 
+Install Dev
+-----------
+
+    pyenv virtualenv 3.9.1 pyunifi
+    pip install -r requirements.txt
+
 API Example
 -----------
 
