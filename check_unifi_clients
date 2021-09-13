@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+from pyunifi.nrpe import UnifiNrpe
+
+
+class CheckWifiClients(UnifiNrpe):
+
+    def additional_args(self, parser):
+        parser.add_argument(
+            '-w', '--warning', default='',
+            help='amount of clients online for WARNING (default: none)')
+        parser.add_argument(
+            '-c', '--critical', default='',
+            help='amount of clients online for CRITICAL (default: none)')
+        parser.add_argument(
+            '-i', '--ssid', default='',
+            help='name of SSID to monitor')
+
+    def get_clients(self, unifi, ssid):
+        clients = unifi.get_clients()
+        matching_clients = [x for x in clients if x['essid'] == ssid]
+        return matching_clients
+
+    def check(self, unifi):
+        ssid = self.args.ssid
+        clients = self.get_clients(unifi, ssid)
+        client_count = len(clients)
+
+        critical = self.args.critical
+        warning = self.args.warning
+
+        code = self.OK
+        if critical != '' and client_count <= int(critical):
+            code = self.CRITICAL
+        elif warning != '' and client_count <= int(warning):
+            code = self.WARNING
+
+        message = f'Users on {ssid}: {client_count} | Users={client_count}'
+
+        return code, message
+
+
+check = CheckWifiClients()
+check.start()
